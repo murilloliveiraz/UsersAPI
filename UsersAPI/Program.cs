@@ -1,5 +1,10 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using UsersAPI.Authorization;
 using UsersAPI.Context;
 using UsersAPI.Data.Models;
 using UsersAPI.Services;
@@ -21,7 +26,34 @@ builder.Services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<User
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-builder.Services.AddScoped<CreateService>();
+
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<TokenService>();
+builder.Services.AddSingleton<IAuthorizationHandler, AgeAuthorization>();
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme =
+        JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new
+        Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("PUQpf1xFNPAhZTS9C/ARn/tHp94BKpztNKE77s9ymL8=")),
+        ValidateAudience = false,
+        ValidateIssuer = false,
+        ClockSkew = TimeSpan.Zero,
+    };
+});
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Minimum Age", policy =>
+        policy.AddRequirements(new MinimumAge(18))
+    );
+});
 
 var app = builder.Build();
 
@@ -34,6 +66,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
