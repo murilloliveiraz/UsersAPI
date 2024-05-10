@@ -13,13 +13,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+var ConnectionString = builder.Configuration["ConnectionStrings:UserConnection"];
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<UserDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("UserConnection"));
+    options.UseSqlServer(ConnectionString);
 });
 
 builder.Services.AddIdentity<User, IdentityRole>().AddEntityFrameworkStores<UserDbContext>().AddDefaultTokenProviders();
@@ -41,7 +43,7 @@ builder.Services.AddAuthentication(options =>
         Microsoft.IdentityModel.Tokens.TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("PUQpf1xFNPAhZTS9C/ARn/tHp94BKpztNKE77s9ymL8=")),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["SymmetricSecurityKey"])),
         ValidateAudience = false,
         ValidateIssuer = false,
         ClockSkew = TimeSpan.Zero,
@@ -68,7 +70,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+  
 app.MapControllers();
 
 app.Run();
